@@ -25,6 +25,7 @@ from random import random, randrange, uniform
 from operator import itemgetter, mul, sub, gt, lt, ge, le
 from sys import hexversion, maxsize
 from time import monotonic
+from typing import Callable, Iterable, Any
 
 from .recipes import (
     _marker,
@@ -58,6 +59,7 @@ __all__ = [
     'consumer',
     'count_cycle',
     'countable',
+    'demux',
     'difference',
     'distinct_combinations',
     'distinct_permutations',
@@ -4296,3 +4298,52 @@ def minmax(iterable_or_value, *others, key=None, default=_marker):
                 hi, hi_key = y, y_key
 
     return lo, hi
+
+
+def demux(
+        function: Callable[[Any], int],
+        iterable: Iterable[Any],
+        n: int = 2,
+        ) -> Iterable[Any]:
+    """
+    Split *iterable* in *n* iterators, *function* does the indirection by
+    returning the index of the output for provided value.
+
+    >>> out0, out1, out2 = demux(lambda v: (v % 3), range(13), 3)
+    >>> print(list(out0))
+    [0, 3, 6, 9, 12]
+    >>> print(list(out1))
+    [1, 4, 7, 10]
+    >>> print(list(out2))
+    [2, 5, 8, 11]
+
+
+    If *function* returns a value that's out of range (e.g. < 0 or >= n),
+    value is filtered out.
+
+    >>> out0, out1 = demux(lambda v: -1, range(20))
+    >>> print(list(out0))
+    []
+    >>> print(list(out1))
+    []
+
+    """
+    assess_src_it, iterable = tee(iterable)
+    assess_it = map(function, assess_src_it)
+    assess_its = tee(assess_it, n)
+    demux_its = tee(iterable, n)
+    return tuple(
+            # A wrapper for stdlib *filter* is necessary here 
+            # as *ind* will have the last value in the loop (*n - 1*)
+            # when executed: this is not what we want.
+            # An intermediate function call "fixes" the value of *ind* to
+            # its value in the loop.
+            _demux_iter(assess, it, ind)
+            for ind, assess, it in zip(range(n), assess_its, demux_its)
+        )
+
+def _demux_iter(
+        indices: Iterable[int],
+        iterable: Iterable[Any],
+        index: int):
+    return (v for v, i in zip(iterable, indices) if i == index)

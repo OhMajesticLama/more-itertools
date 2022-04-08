@@ -5054,3 +5054,21 @@ class DuplicatesJustSeenTests(TestCase):
     def test_nested(self):
         iterable = [[[1, 2], [1, 2]], [5, 6], [5, 6]]
         self.assertEqual(list(mi.duplicates_justseen(iterable)), [[5, 6]])
+
+
+class DemuxTests(TestCase):
+    """Unit tests for ``demux()``"""
+    def test_demux(self):
+        out0, out1, out2 = mi.demux(lambda v: (v % 3), range(20), 3)
+        out0_l = list(out0)
+        out1_l = list(out1)
+        out2_l = list(out2)
+        print(out0_l, out1_l, out2_l)
+        self.assertEqual(out0_l, [0, 3, 6, 9, 12, 15, 18])
+        self.assertEqual(out1_l, [1, 4, 7, 10, 13, 16, 19])
+        self.assertEqual(out2_l, [2, 5, 8, 11, 14, 17])
+
+    def test_demux_filterout(self):
+        out0, out1 = mi.demux(lambda v: -1, range(20), 2)
+        self.assertEqual(list(out0), [])
+        self.assertEqual(list(out1), [])

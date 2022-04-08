@@ -33,6 +33,7 @@ These tools yield groups of items from a source iterable.
 
 .. autofunction:: grouper
 .. autofunction:: partition
+.. autofunction:: demux
 
 
 Lookahead and lookback
